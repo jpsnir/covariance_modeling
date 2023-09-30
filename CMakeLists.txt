@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.18)
+project(covariance_models)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+find_package(Eigen3 REQUIRED)
+find_package(Sophus REQUIRED)
+if (${Eigen3_FOUND})
+    message(STATUS "Eigen3 found")
+endif()
+
+if (${Sophus_FOUND})
+    message(STATUS "Sophus found")
+endif()
