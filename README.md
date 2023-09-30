@@ -10,12 +10,13 @@ covariances of stochastic processes.
 5. plotly
 
 ## project organization
-- core libraries -
+- core modules -
     - basic stochastic processes,
     - differentials and integrals,
     - stochastic linear systems,
     - non-linear systems,
     - stochastic processes on manifolds.
+    - simulation,
     - visualization
 - python bindings
     -
