@@ -1,8 +1,9 @@
+#ifndef STOCHASTIC_PROCESS
 #include <cmath>
 #include <eigen3/Eigen/Dense>
 #include <iostream>
-#include <random>
 #include <memory>
+#include "distribution_generators.h"
 
 /*
  * @brief: Stochastic process implements a one-dimensional random sequence <X_1, X_2,
@@ -25,7 +26,7 @@ public:
   /*
    * @brief : Default constructor
    */
-  StochasticProcess() = default;
+  StochasticProcess();
 
   /*
    * @brief : constructor to initialize the number of elements.
@@ -40,49 +41,53 @@ public:
   /* @brief: constructor implements user defined pdf and process function for generating the
    * elements of stochastic process.
    */
-  StochasticProcess(const int N, const std::function<double(double)> &process,
-                    const std::function<double(double)> &inv_cdf);
+  StochasticProcess(const int N, const std::function<double(double)> process,
+                    const std::function<double(std::mt19937&)> dist_fn);
 
-  //public methods
-  /*
-   * @brief: resets the stochastic process,
-   * @details: generates new seed and initializes the mersenee twister generator
-   * again.
-   */
-  virtual void reset();
-
+  ~StochasticProcess() = default;
   /*
    * @brief: generate the eigen vector of random numbers, given the base
    * distribution and base process function.
+   * @details: The generate function, when it is called generates a sequence of
+   * random numbers stored in an eigen vector. Each call of generate() function
+   * seeds the mersenne twister generator again, and generates a new random
+   * sequence from the given process function and distribution function.
    */
   virtual std::shared_ptr<Eigen::VectorXf> generate();
-
-  // Inspired from
-  // https://github.com/SpectacularAI/SLAM-module/blob/9029de256e49898077dd17e65518ae6abe248aa1/id.cpp#L7
-
-  // Operators
+  /*
+   * @brief: operator () performs the same things as generate function ()
+   * @see generate()
+   */
+  virtual std::shared_ptr<Eigen::VectorXf> operator()();
   // reinitialize the stochastic process
-  virtual StochasticProcess operator+(const StochasticProcess &Y);
-  virtual StochasticProcess operator-(const StochasticProcess &Y);
-  virtual StochasticProcess operator*(const StochasticProcess &Y);
-
+  //virtual StochasticProcess operator+(const StochasticProcess &Y);
+  //virtual StochasticProcess operator-(const StochasticProcess &Y);
+  //virtual StochasticProcess operator*(const StochasticProcess &Y);
   // generator function:
   // std::function can take functions, functors, lambda-functions,
   // For member methods of other classes, we need to overload these methods or
   // use template programming
-  virtual void setProcess(std::function<double(double)> process_generator);
-  virtual void setDistribution(std::function<double(double)> inv_cdf);
+  void setProcess(std::function<double(double)> process_generator);
+  void setDistribution(std::function<double(double)> inv_cdf);
 
+private:
+  void initialize_generator(const std::function<double(double)> &process, const std::function<double(std::mt19937&)> &dist_fn);
+  void setupWhiteNoiseProcess();
 public:
   // size
   int N = 100;
+  bool constructed = false;
 
 private:
+  unsigned seed_value = 0;
   std::random_device rd;
-  std::mt19937 generator;
+  std::mt19937 mt_gen;
   std::function<double(double)> process;
-  std::function<double(double)> inv_cdf;
+  std::function<double(std::mt19937&)> distribution_function;
   // raw data
-  std::shared_ptr<Eigen::VectorXf> X;
+  std::shared_ptr<Eigen::VectorXf> X_ptr;
+  StandardNormal std_normal;
 };
 }; // namespace cvm
+
+#endif
