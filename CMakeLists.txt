@@ -16,14 +16,21 @@ endfunction(add_executable_with_matplotlib)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     "${CMAKE_SOURCE_DIR}/cmake/modules/")
+enable_testing()
 find_package(Eigen3 3.3 REQUIRED)
 find_package(Sophus REQUIRED)
+find_package(GTest REQUIRED)
+
 if (${Eigen3_FOUND})
     message(STATUS "Eigen3 found")
 endif()
 
 if (${Sophus_FOUND})
     message(STATUS "Sophus found")
+endif()
+
+if (${GTest_FOUND})
+    message(STATUS "GTest found")
 endif()
 
 find_package(Python3 COMPONENTS Interpreter Development)
@@ -41,7 +48,7 @@ else()
   " Some functions might not work.")
   add_definitions(-DWITHOUT_NUMPY)
 endif()
-# include_directories(${Eigen3_INCLUDE_DIR})
+
 set(LIBRARY_SOURCES
     ./src/cvm_core/stochastic_processes.cpp)
 include_directories(include)
@@ -51,3 +58,13 @@ target_link_libraries(cvm Eigen3::Eigen Sophus::Sophus)
 
 ## Examples
 add_executable(white_noise ./examples/white_noise.cpp )
+
+## tests
+set(TEST_SOURCES
+    ./tests/test_stochastic_process.cpp)
+add_executable(${PROJECT_NAME}_tests ${TEST_SOURCES})
+target_link_libraries(${PROJECT_NAME}_tests GTest::GTest GTest::Main cvm)
+target_include_directories(${PROJECT_NAME}_tests PUBLIC
+                           ${GTEST_INCLUDE_DIRS}
+                           ./include)
+gtest_discover_tests(${PROJECT_NAME}_tests)
