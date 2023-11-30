@@ -50,7 +50,7 @@ else()
 endif()
 
 set(LIBRARY_SOURCES
-    ./src/cvm_core/stochastic_processes.cpp)
+    ./src/cvm_core/stochastic_process.cpp)
 include_directories(include)
 add_library(cvm SHARED ${LIBRARY_SOURCES})
 target_link_libraries(cvm Eigen3::Eigen Sophus::Sophus)

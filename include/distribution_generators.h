@@ -16,6 +16,10 @@ public:
   virtual std::function<double(std::mt19937 &)> operator()() = 0;
 };
 
+/* @brief: For standard normal distribution, we will use the inbuilt
+ * std::normal_distribution class in random library. This uses box muller
+ * method to generate numbers from a normal distribution.
+ */
 class StandardNormal : public DistributionGenerator {
 public:
   StandardNormal() = default;

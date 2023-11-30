@@ -1,3 +1,6 @@
 [submodule "matplotlib-cpp"]
 	path = matplotlib-cpp
 	url = https://github.com/Cryoris/matplotlib-cpp.git
+[submodule "deep_learning_covariance_modeling"]
+	path = deep_learning_covariance_modeling
+	url = git@neufr-gitlab.neu.edu:neufr/vins/deep_learning_covariance_modeling.git

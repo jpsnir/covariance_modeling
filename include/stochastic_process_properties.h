@@ -1,9 +1,9 @@
 #include <eigen3/Eigen/Dense>
-
+#include <StochasticProcess.h>
 namespace cvm{
 class StochasticProcessProperties{
-  virtual Eigen::VectorXf moving_mean();
-  virtual Eigen::VectorXf moving_std();
+  virtual Eigen::VectorXf mean();
+  virtual Eigen::VectorXf std_dev();
   virtual Eigen::VectorXf auto_correlation();
   virtual Eigen::VectorXf output_power();
   virtual Eigen::VectorXf variance();

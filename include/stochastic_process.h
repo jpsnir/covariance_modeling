@@ -59,6 +59,7 @@ public:
    * @see generate()
    */
   virtual std::shared_ptr<Eigen::VectorXf> operator()();
+  virtual std::shared_ptr<Eigen::MatrixXf> generate_matrix();
   // reinitialize the stochastic process
   //virtual StochasticProcess operator+(const StochasticProcess &Y);
   //virtual StochasticProcess operator-(const StochasticProcess &Y);
