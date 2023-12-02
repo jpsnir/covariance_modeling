@@ -2,5 +2,5 @@
 	path = matplotlib-cpp
 	url = https://github.com/Cryoris/matplotlib-cpp.git
 [submodule "deep_learning_covariance_modeling"]
-	path = deep_learning_covariance_modeling
+	path = droid_covariance_modeling
 	url = git@github.com:jpsnir/droid_slam_covariance_models.git
