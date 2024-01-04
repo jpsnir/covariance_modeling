@@ -2,5 +2,11 @@
 	path = matplotlib-cpp
 	url = https://github.com/Cryoris/matplotlib-cpp.git
 [submodule "deep_learning_covariance_modeling"]
-	path = droid_covariance_modeling
+	path = droid_slam_covariance_modeling
 	url = git@github.com:jpsnir/droid_slam_covariance_models.git
+[submodule "thirdparty/ORB_SLAM3"]
+	path = thirdparty/ORB_SLAM3
+	url = https://github.com/jpsnir/ORB_SLAM3.git
+[submodule "thirdparty/VINS-Mono"]
+	path = thirdparty/vins_mono_ws/src/VINS-Mono
+	url = https://github.com/jpsnir/VINS-Mono.git
