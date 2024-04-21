@@ -8,20 +8,102 @@ ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.02, 0.02, 0.01]))
 PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.01, 0.01, 0.01]))
 
 
-def circular_simulation():
+
+def pose_graph_simulation_square():
+    """
+    *(5)----*(4)----*(3)
+    |                 |
+    |                 |
+    *(0)----*(1)----*(2)
+    |
+    *(6)
+    An odometry factor given by between factors is represented in
+    terms of relative measurements from previous frames.  
+    """
+    graph = gtsam.NonlinearFactorGraph()
+    # factors are assigned in the local coordinate frame of the current frame for a between factor.
+    graph.add(gtsam.PriorFactorPose2(0, gtsam.Pose2(0, 0 , 0), PRIOR_NOISE ))
+    # move along x axis of current frame
+    graph.add(gtsam.BetweenFactorPose2(0, 1, gtsam.Pose2(2, 0, 0), ODOMETRY_NOISE))
+    # move along x axis of current frame, and rotate by np.pi/2 making x axis pointing to 
+    # global y axis
+    graph.add(gtsam.BetweenFactorPose2(1, 2, gtsam.Pose2(2, 0, np.pi/2), ODOMETRY_NOISE))
+    # move along x axis of current frame, and rotate by np.pi/2 making x axis pointing to 
+    # global -x axis
+    graph.add(gtsam.BetweenFactorPose2(2, 3, gtsam.Pose2(2, 0, np.pi/2), ODOMETRY_NOISE))
+    # move along x axis of current frame, 
+    graph.add(gtsam.BetweenFactorPose2(3, 4, gtsam.Pose2(2, 0, 0), ODOMETRY_NOISE))
+    # move along x axis of current frame, 
+    graph.add(gtsam.BetweenFactorPose2(4, 5, gtsam.Pose2(2, 0, 0), ODOMETRY_NOISE))
+    # move along y axis of current frame,rotate by  np.pi making it parallel to
+    # x axis of global frame
+    graph.add(gtsam.BetweenFactorPose2(5, 6, gtsam.Pose2(0, 3, np.pi/2), ODOMETRY_NOISE))
+    graph.add(gtsam.BetweenFactorPose2(6, 7, gtsam.Pose2(0, 2, np.pi/2), ODOMETRY_NOISE))
+    
+    # Values are assigned in the global frame.
+    initial = gtsam.Values()
+    initial.insert(0, gtsam.Pose2(0.5, 0.0, 0.2))
+    initial.insert(1, gtsam.Pose2(2.3, 0.1, -0.2))
+    initial.insert(2, gtsam.Pose2(4.1, 0.1, np.pi/2))
+    initial.insert(3, gtsam.Pose2(4.0, 2.0, np.pi))
+    initial.insert(4, gtsam.Pose2(2.1, 2.1, np.pi))
+    initial.insert(5, gtsam.Pose2(0, 2.1, np.pi))
+    initial.insert(6, gtsam.Pose2(0, 1.5, -3*np.pi/2))
+    initial.insert(7, gtsam.Pose2(2.5, 0.5, 0))
+    
+    params = gtsam.LevenbergMarquardtParams()
+    optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
+    
+    result = optimizer.optimize()
+    marginals = gtsam.Marginals(graph, result)
+    for i in range( 0, 8):
+        gtsam_plot.plot_pose2(0, result.atPose2(i), 0.5, marginals.marginalCovariance(i))
+    
+    plt.axis('equal')
+    plt.title("After optimization")
+    plt.grid(True)
+    plt.show()
+
+def pose_graph_simulation_circular():
+    """
+       *  *
+       
+    *       *
+    
+    *       *
+      
+       *  * 
+    """
+    
     factor = 1
     graph = gtsam.NonlinearFactorGraph()   
     N = 11
-    theta_max = np.pi/2
+    theta_max = 2*np.pi
     pts = np.zeros([N ,3])
     noisy_pts = np.zeros([N, 3])
+    odometry = np.zeros([N-1, 3])
     for i, th in enumerate(np.linspace(0, theta_max , N)):
         pts[i, :] = np.array([np.cos(th), np.sin(th), th])
         noisy_pts[i, :] = pts[i, :] + factor*np.random.randn(1, 3)
-    
-    priorMean = gtsam.Pose2(pts[0, 0], pts[0, 1], 0.0)
+        if i != 0:
+            cur_theta = pts[i-1, 2]
+            # this rotation matrix transforms the vector in local frame 
+            # to world frame
+            R = np.array([[np.cos(cur_theta), -np.sin(cur_theta)],
+                          [np.sin(cur_theta), np.cos(cur_theta)]]
+            )
+            # we want delta_xy in local frame, therefore 
+            # the we need inverse of the rotation matrix 
+            # and get the between factor odometry relationship.
+            delta_xy_local = R.T@(pts[i, :2] - pts[i-1, :2])
+            
+            # theta can be obtained from 
+            delta_theta_local = pts[i, 2] - pts[i-1, 2]
+            odometry[i-1, :] = np.array([delta_xy_local[0], delta_xy_local[1], delta_theta_local]) 
+    priorMean = gtsam.Pose2(pts[0, 0], pts[0, 1], 0)
     graph.add(gtsam.PriorFactorPose2(0, priorMean, PRIOR_NOISE))
-    odometry = np.diff(pts, axis=0)
+    #odometry = np.diff(pts, axis=0)
+       
     
     for id, o in enumerate(odometry):
         graph.add(gtsam.BetweenFactorPose2(id, id + 1, gtsam.Pose2(o[0], o[1], o[2]), ODOMETRY_NOISE))
@@ -52,35 +134,7 @@ def circular_simulation():
     plt.title("After optimization")
     plt.grid(True)
     plt.show()
-
-def simulation_2():
-    graph = gtsam.NonlinearFactorGraph()
-    graph.add(gtsam.PriorFactorPose2(0, gtsam.Pose2(0, 0 , 0), PRIOR_NOISE ))
-    graph.add(gtsam.BetweenFactorPose2(0, 1, gtsam.Pose2(2, 0, 0), ODOMETRY_NOISE))
-    graph.add(gtsam.BetweenFactorPose2(1, 2, gtsam.Pose2(2, 0, np.pi/3), ODOMETRY_NOISE))
-    graph.add(gtsam.BetweenFactorPose2(2, 3, gtsam.Pose2(2, 0, np.pi/3), ODOMETRY_NOISE))
-    graph.add(gtsam.BetweenFactorPose2(3, 4, gtsam.Pose2(2, 0, np.pi/3), ODOMETRY_NOISE))
-    
-    initial = gtsam.Values()
-    initial.insert(0, gtsam.Pose2(0.5, 0.0, 0.2))
-    initial.insert(1, gtsam.Pose2(2.3, 0.1, -0.2))
-    initial.insert(2, gtsam.Pose2(4.1, 0.1, np.pi/2))
-    initial.insert(3, gtsam.Pose2(4.0, 2.0, np.pi))
-    initial.insert(4, gtsam.Pose2(2.1, 2.1, -np.pi))
-    
-    params = gtsam.LevenbergMarquardtParams()
-    optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initial, params)
-    
-    result = optimizer.optimize()
-    marginals = gtsam.Marginals(graph, result)
-    for i in range( 0, 5):
-        gtsam_plot.plot_pose2(0, result.atPose2(i), 0.5, marginals.marginalCovariance(i))
-    
-    plt.axis('equal')
-    plt.title("After optimization")
-    plt.grid(True)
-    plt.show()
     
 if __name__ == "__main__":
-    #circular_simulation()
-    simulation_2()
+    pose_graph_simulation_square()
+    pose_graph_simulation_circular()
