@@ -1,8 +1,10 @@
 import gtsam
+import gtsam.imuBias
 import numpy as np
 import typing as T
 import matplotlib.pyplot as plt
 import gtsam.utils.plot as gtsam_plot
+import matplotlib.animation as animation
 
 ODOMETRY_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.02, 0.02, 0.01]))
 PRIOR_NOISE = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.01, 0.01, 0.01]))
@@ -134,7 +136,49 @@ def pose_graph_simulation_circular():
     plt.title("After optimization")
     plt.grid(True)
     plt.show()
+
+def stationary_imu_simulation():
+    graph = gtsam.NonlinearFactorGraph()
+    # 1. generate stationary measurements
+    scenario = gtsam.AcceleratingScenario(
+        nRb = gtsam.Rot3(np.eye(3)),
+        p0 = np.zeros([3, 1]),
+        v0 = np.zeros([3, 1]),
+        a_n = np.zeros([3, 1]),
+        omega_b = np.zeros([3, 1]),
+    )
+    
+    # IMU noise and gravity
+    g = 9.81
+    params = gtsam.PreintegrationParams.MakeSharedU(g)
+    kGyroSigma = np.radians(0.5)/60
+    kAccelSigma = 0.1/60
+    params.setGyroscopeCovariance(kGyroSigma**2 * np.identity(3, float))
+    params.setAccelerometerCovariance(kGyroSigma**2 * np.identity(3, float))
+    params.setIntegrationCovariance(1e-7**2 *np.identity(3 ,float))
+    
+    # Imu bias
+    bias = gtsam.imuBias.ConstantBias(
+        biasAcc=np.array([0, 0.1, 0.1]),
+        biasGyro=np.array([0, 0, 0])
+    )
+    
+    runner = gtsam.ScenarioRunner(scenario, params, imuSampleTime=0.01, bias=bias)
+    fig, ax = plt.subplots(3, 2)
+    def update(t):
+        omega = runner.measuredAngularVelocity(t)
+        acc = runner.measuredSpecificForce(t)
+        for i in range(0, 3):
+            ax[i][0].scatter(t, omega[i])
+        
+        for i in range(0, 3):
+            ax[i][1].scatter(t, acc[i])
+    
+    ani = animation.FuncAnimation(fig, update, frames=np.linspace(0, 10, 1000))
+    plt.show()
+            
     
 if __name__ == "__main__":
-    pose_graph_simulation_square()
-    pose_graph_simulation_circular()
+    #pose_graph_simulation_square()
+    #pose_graph_simulation_circular()
+    stationary_imu_simulation()
